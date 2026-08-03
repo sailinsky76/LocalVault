@@ -2,7 +2,7 @@
 # 首次在 Android Studio 打开时如遇解析失败，用 IDE 的版本提示更新即可。
 [versions]
 agp = "8.13.0"
-kotlin = "2.2.0"
+kotlin = "2.4.10"
 coreKtx = "1.17.0"
 lifecycle = "2.9.0"
 activityCompose = "1.10.1"
@@ -13,7 +13,7 @@ biometric = "1.4.0-alpha02"
 autofill = "1.1.0"
 security = "1.1.0-alpha07"
 datastore = "1.1.7"
-serialization = "1.8.1"
+serialization = "1.11.0"
 argon2kt = "1.6.0"
 junit = "4.13.2"
 androidxJunit = "1.2.1"
