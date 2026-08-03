@@ -110,7 +110,7 @@ jobs:
         run: rm -f keystore.properties "$RUNNER_TEMP/release.jks"
 
       - name: Create draft release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           draft: true          # 草稿：让你有机会亲自核对指纹和校验和再发布
           name: LocalVault ${{ steps.pack.outputs.version }}
