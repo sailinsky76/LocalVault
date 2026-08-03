@@ -1,0 +1,57 @@
+# 换行符规则。
+#
+# 这个文件在 Windows 上开发、要跑 Linux CI 的项目里是必需的，
+# 不是可选优化。原因见下面 gradlew 那两行。
+
+# 默认：Git 自动识别文本文件，仓库里一律存 LF。
+# 你本地 checkout 出来是什么样由 core.autocrlf 决定，不影响仓库内容。
+* text=auto eol=lf
+
+# ── 必须 LF ─────────────────────────────────────────────────
+# gradlew 是 shell 脚本。如果它带着 CRLF 进了仓库，
+# Linux（GitHub Actions 的 runner）执行时会报
+#   /usr/bin/env: 'sh\r': No such file or directory
+# 这个报错看起来和换行符毫无关系，第一次遇到能卡半天。
+gradlew text eol=lf
+*.sh    text eol=lf
+
+# ── 必须 CRLF ───────────────────────────────────────────────
+# 批处理文件在 Windows 上用 LF 可能出现诡异行为
+gradlew.bat text eol=crlf
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+
+# ── 显式声明为文本（避免误判） ───────────────────────────────
+*.kt    text
+*.kts   text
+*.java  text
+*.xml   text
+*.md    text
+*.yml   text
+*.yaml  text
+*.toml  text
+*.pro   text
+*.properties text
+
+# ── 二进制：绝不做换行符转换 ─────────────────────────────────
+# gradle-wrapper.jar 尤其重要：CI 里有一步校验它的哈希，
+# 被改动一个字节就过不去。
+*.jar    binary
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.webp   binary
+*.gif    binary
+*.ico    binary
+*.ttf    binary
+*.otf    binary
+*.keystore binary
+*.jks    binary
+*.apk    binary
+*.aab    binary
+*.so     binary
+*.zip    binary
+
+# ── GitHub 语言统计 ─────────────────────────────────────────
+# 让仓库首页的语言条反映实际情况
+gradle/wrapper/gradle-wrapper.jar linguist-vendored

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  启动图标前景层 —— 一把挂锁：钢制锁梁 + 黄铜锁体 + 挖空的锁孔。
+
+  为什么是挂锁而不是盾牌：
+  盾牌说的是「安全」，那是个形容词，装什么的都能用；挂锁说的是「这里面锁着东西，
+  你得有钥匙」，那正好是这个 App 干的事。用户在抽屉里翻图标时，判断只有半秒，
+  半秒里能认出来的必须是**用途**，不是气质。
+
+  配色直接取 VaultColors，一个新色号都没加：
+    锁体 = Brass #E3B96C —— 设计说明里写的「黄铜是锁芯和钥匙的颜色」；
+    锁梁 = 比 Dim 亮一档的钢青白 #C2D0D2 —— 「钢青色机身 + 黄铜色强调」的字面执行，
+           同时让锁梁和锁体在 48dp 下靠明度差分开，而不是靠轮廓线；
+    锁孔 = 挖空（fillType="evenOdd"），露出背景层。挖空而不是填一个深色，
+           是为了让 API 33+ 的主题图标（monochrome）复用同一套几何时，
+           锁孔跟着系统背景变，不会变成一块死黑。
+
+  几何全部画在 108x108 的 adaptive-icon 坐标系里，可见范围只有中间 72，
+  安全区是中间 66。整个锁的最远点（锁体底部圆角）距中心 32.0 < 33，
+  也就是说**任何形状的启动器蒙版都不会切到它**。别随手放大：
+  一放大，圆形蒙版先切掉锁体的两个下角，锁就变成了一个方块。
+
+  锁体和锁梁是两条 path，锁梁先画、锁体后画，梁腿多插进锁体 2.3 个单位，
+  被锁体盖住。这样锁梁不需要在锁体上边缘做精确对齐。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 锁梁：中心线半径 12.8 的半圆 + 两条插进锁体的直腿。
+         线宽 6.4 = 中心线半径的一半，和 Glyphs.kt 里 Glyph.Lock 的粗细比例同源。 -->
+    <path
+        android:pathData="M41.2,53 V41.1 A12.8,12.8 0 0 1 66.8,41.1 V53"
+        android:strokeWidth="6.4"
+        android:strokeColor="#FFC2D0D2"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" />
+
+    <!-- 锁体（48x32，圆角 8，比例与 Glyph.Lock 的 15x10/r2.5 一致）
+         + 锁孔。两段子路径靠 evenOdd 相减，锁孔成为真正的孔。 -->
+    <path
+        android:fillColor="#FFE3B96C"
+        android:fillType="evenOdd"
+        android:pathData="M38,50.7 H70 A8,8 0 0 1 78,58.7 V74.7 A8,8 0 0 1 70,82.7 H38 A8,8 0 0 1 30,74.7 V58.7 A8,8 0 0 1 38,50.7 Z M50.66,66.48 L50,76 L58,76 L57.34,66.48 A5.2,5.2 0 1 0 50.66,66.48 Z" />
+</vector>

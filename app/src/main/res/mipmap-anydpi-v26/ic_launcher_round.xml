@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  和 ic_launcher.xml 完全相同，存在的唯一理由是 AndroidManifest 里那行
+  android:roundIcon 指着它。
+
+  自适应图标时代 roundIcon 已经没有意义了 —— 圆形是启动器自己套的蒙版，
+  不是 App 提供的第二张图。之所以不把 manifest 里那行删掉：
+  少数国产启动器仍然会优先读 roundIcon，读不到就退回到系统默认的机器人图标。
+  留一个三行的文件比赌那些启动器的行为便宜。
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
+</adaptive-icon>

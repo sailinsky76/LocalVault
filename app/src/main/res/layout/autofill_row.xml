@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  填充条上的一行。**这是全工程唯一一个 XML 布局文件**——
+
+  界面全部是 Compose，但填充条不是我们画的：它由**系统进程**（输入法之上的那层
+  浮窗）加载并渲染，而系统只认 `RemoteViews`，`RemoteViews` 只认这种老式布局。
+  所以这个文件不是历史遗留，也不该有人「顺手统一成 Compose」。
+
+  几条不要随手改的：
+
+  1. **必须自带背景色。** 这一行画在别人的应用上面，深色浅色什么都可能；
+     不写 background 的话，在浅色输入法上会变成白底白字。
+     这里用的就是设计令牌里的 Slab（#18252A）和 Text（#F2F6F5），
+     和应用里的卡片是同一个颜色——用户一眼能认出「这是保险库弹的」，
+     那本身也是一道防钓鱼：一条长得不一样的填充条值得多看一眼。
+
+  2. **三行，第三行默认 `gone`。** 兄弟域那一行（「你存的是 mail.example.com」）
+     只在 `SameSite` 时由代码 `setViewVisibility` 打开（决策(159) 第二道兜底）。
+     不用空串占位：空的 TextView 照样占行距，于是精确匹配那几条会比兄弟域那几条
+     矮一点点，看着像没对齐。
+
+  3. **`singleLine` + `ellipsize` 是第二道，不是唯一那道。** 第一道在
+     `AutofillRow.clean` 里（压成一行、剔控制字符、按码点截断）。只留这一道的话，
+     那个 200 字的名称仍然会**整串**被交给系统进程去测量和布局。
+
+  4. 这里**没有 ImageView，也没有图标**。填充条上摆一个自家 logo 是很常见的做法，
+     但那需要往系统进程里传一张位图，而这一行能传达的信息里，
+     没有哪一条值得多开这个口子。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#18252A"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp">
+
+    <TextView
+        android:id="@+id/autofill_row_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#F2F6F5"
+        android:textSize="15sp"
+        android:singleLine="true"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/autofill_row_subtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="#A6B8BB"
+        android:textSize="13sp"
+        android:singleLine="true"
+        android:ellipsize="end" />
+
+    <!-- 兄弟域那一行。黄铜色是全工程「需要你多看一眼」的颜色 -->
+    <TextView
+        android:id="@+id/autofill_row_badge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="#E3B96C"
+        android:textSize="12sp"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:visibility="gone" />
+</LinearLayout>

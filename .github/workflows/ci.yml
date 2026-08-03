@@ -1,0 +1,101 @@
+# CI：每次 push 和 PR 都跑。它的作用不是「让绿灯好看」，
+# 而是让 README 里「57 个测试文件、纯 JVM 可跑」这句话随时可被外人验证。
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+# 默认只读。Actions 的写权限是最常见的供应链攻击面之一，
+# 这里显式收紧，需要写权限的 job 单独声明。
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 校验 gradle-wrapper.jar 的哈希是否是 Gradle 官方发布的那一份。
+      # 篡改 wrapper jar 是往构建里插代码的经典手法，这一步必须在
+      # 任何 ./gradlew 调用之前。
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Unit tests
+        run: ./gradlew test --stacktrace
+
+      - name: Assemble debug
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Android Lint
+        run: ./gradlew lintDebug --stacktrace
+        continue-on-error: true   # 先不卡红，等 lint 基线清干净后删掉这行
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            app/build/reports/tests/
+            app/build/reports/lint-results-*.html
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # 这个 job 只做一件事：确保 APK 里没有 INTERNET 权限。
+  # README 的整个信任前提就是这一条，所以让机器每次都查一遍，
+  # 而不是靠人记得查。
+  permission-guard:
+    name: No INTERNET permission
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gradle/actions/wrapper-validation@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Assemble debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Dump and check permissions
+        run: |
+          set -euo pipefail
+          APK=$(find app/build/outputs/apk/debug -name '*.apk' | head -n1)
+          echo "APK: $APK"
+          AAPT2=$(find "$ANDROID_HOME/build-tools" -name aapt2 | sort -V | tail -n1)
+          "$AAPT2" dump permissions "$APK" | tee perms.txt
+          if grep -q 'android.permission.INTERNET' perms.txt; then
+            echo "::error::APK 声明了 INTERNET 权限——这违反了项目的核心承诺"
+            exit 1
+          fi
+          echo "OK: 未声明 INTERNET"

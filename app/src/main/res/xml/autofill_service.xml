@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  自动填充服务的元数据。系统在「设置 → 密码、通行密钥和自动填充」里
+  列出候选服务时读它。
+
+  1. `settingsActivity` 指向主界面。系统会在服务名字旁边画一个齿轮，
+     点它落到这里。指向 `MainActivity` 而不是另开一个「自动填充设置」页，
+     是因为眼下能设的东西全在设置页里，而多一个 exported 的 Activity
+     就多一个别人能拉起的入口。M4-4 加总开关时再看要不要拆。
+
+  2. **`supportsInlineSuggestions` 是内联那一整条路的总闸**（M4-4b）。
+     少了它，`FillRequest.getInlineSuggestionsRequest()` 永远返回 null，
+     代码一行不报错、日志一句不说，表现只是「键盘上那一条永远不出现」。
+     这个属性是 API 30 加的，26~29 的系统解析这份 XML 时读不到它也不会出错
+     （旧平台对认不得的属性一律略过），所以不需要拆一份 `xml-v30/`。
+
+  3. **没有 `compatibilityPackage`。** 那个属性用来对付不支持
+     Autofill Framework 的老浏览器：系统会退回用无障碍那条路去抓页面内容，
+     准确率低，而且抓到的东西和 `webDomain` 的可信度完全不是一回事——
+     决策(158) 那整条链（谁承载、谁自称、签名对不对得上）在兼容模式下站不住。
+     宁可在那几个浏览器上不出填充条。
+-->
+<autofill-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:settingsActivity="cn.localvault.app.MainActivity"
+    android:supportsInlineSuggestions="true" />

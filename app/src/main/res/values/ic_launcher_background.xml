@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  图标背景色。比 VaultColors.Void (#0A1113) 亮两档、比 Slab (#18252A) 低半档。
+
+  为什么不直接用 Void：Void 在启动器里几乎等于纯黑，而纯黑图标在深色壁纸上
+  会变成一个「洞」—— 只剩黄铜锁孤零零浮着，图标的边界消失，看起来像没画完。
+  #17272D 仍然是同一个色相的钢青，但在任何壁纸上都还是一块**有形状的机身**。
+-->
+<resources>
+    <color name="ic_launcher_background">#FF17272D</color>
+</resources>

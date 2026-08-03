@@ -1,0 +1,78 @@
+name: 🐞 Bug 报告 / Bug report
+description: 崩溃、功能异常、界面问题（自动填充问题请用专门的模板）
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **如果这是一个安全问题，请不要提交这个表单。**
+        走 SECURITY.md 里的私密渠道。公开 issue 会在修复之前把利用方式告诉所有人。
+
+  - type: textarea
+    id: what
+    attributes:
+      label: 发生了什么
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 你期望发生什么
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      placeholder: 1.0.0（设置 → 关于）
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: 机型与 Android 版本
+      placeholder: Pixel 7 / Android 14
+    validations:
+      required: true
+
+  - type: dropdown
+    id: source
+    attributes:
+      label: APK 来源
+      options:
+        - 本仓库 Release
+        - 自行构建
+        - 其他渠道（请在描述里说明）
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 崩溃日志（如有）
+      render: text
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 确认
+      options:
+        - label: 我贴出的内容里没有真实账号、密码或其他个人信息
+          required: true
+        - label: 我确认这不是一个安全漏洞（安全问题应走 SECURITY.md 的私密渠道）
+          required: true

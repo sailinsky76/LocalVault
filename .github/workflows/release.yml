@@ -1,0 +1,134 @@
+# 发布流程：打 tag → 构建签名 release APK → 生成 SHA256SUMS →
+# 创建 Release（草稿）。
+#
+# ⚠️ 用这个 workflow 之前先想清楚一件事：
+# 它要求把签名 keystore 放进 GitHub Secrets。这意味着 GitHub 和任何
+# 拿到你仓库写权限的人（或一个被投毒的 action）理论上都能拿到它。
+#
+# 两种做法，自己选：
+#   A. 本地签名（更保守，推荐 1.0 阶段用）：
+#      密钥永远不出你的机器，CI 只跑测试，APK 你在本地 assembleRelease
+#      之后手动传到 Release。用这个 workflow 里的 `verify-only` 部分。
+#   B. CI 签名（省事，适合发版频繁之后）：
+#      按下面配置 Secrets。前提是你已经打开了分支保护、
+#      把 Actions 的第三方 action 限制成只允许指定来源。
+#
+# 需要的 Secrets（做法 B）：
+#   SIGNING_KEYSTORE_BASE64  = base64 -w0 localvault-release.jks
+#   SIGNING_STORE_PASSWORD
+#   SIGNING_KEY_ALIAS
+#   SIGNING_KEY_PASSWORD
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # 创建 Release 需要写权限，仅此 workflow
+
+jobs:
+  release:
+    name: Build signed release
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run tests before shipping
+        run: ./gradlew test
+
+      # ── 做法 B：从 Secrets 还原 keystore ──────────────────────
+      # 如果走做法 A，把这一步和下一步的 signing 相关内容删掉，
+      # 并把 assembleRelease 换成只跑 test。
+      - name: Decode keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "${KEYSTORE_B64:-}" ]; then
+            echo "::error::未配置 SIGNING_KEYSTORE_BASE64"
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          cat > keystore.properties <<EOF
+          storeFile=$RUNNER_TEMP/release.jks
+          storePassword=${{ secrets.SIGNING_STORE_PASSWORD }}
+          keyAlias=${{ secrets.SIGNING_KEY_ALIAS }}
+          keyPassword=${{ secrets.SIGNING_KEY_PASSWORD }}
+          EOF
+
+      - name: Assemble release
+        run: ./gradlew assembleRelease
+
+      - name: Verify signature and permissions
+        run: |
+          set -euo pipefail
+          APK=$(find app/build/outputs/apk/release -name '*.apk' | head -n1)
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n1)
+          echo "== 签名证书 =="
+          "$BT/apksigner" verify --print-certs "$APK"
+          echo "== 权限 =="
+          "$BT/aapt2" dump permissions "$APK" | tee perms.txt
+          if grep -q 'android.permission.INTERNET' perms.txt; then
+            echo "::error::release APK 声明了 INTERNET 权限，发布中止"
+            exit 1
+          fi
+
+      - name: Rename and checksum
+        id: pack
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p dist
+          APK=$(find app/build/outputs/apk/release -name '*.apk' | head -n1)
+          cp "$APK" "dist/LocalVault-${VERSION}.apk"
+          cd dist
+          sha256sum ./*.apk > SHA256SUMS
+          cat SHA256SUMS
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Clean up secrets on runner
+        if: always()
+        run: rm -f keystore.properties "$RUNNER_TEMP/release.jks"
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true          # 草稿：让你有机会亲自核对指纹和校验和再发布
+          name: LocalVault ${{ steps.pack.outputs.version }}
+          files: |
+            dist/LocalVault-${{ steps.pack.outputs.version }}.apk
+            dist/SHA256SUMS
+          body: |
+            <!-- 发布前手动补齐，见 RELEASE_CHECKLIST.md -->
+
+            ## 变更
+            见 [CHANGELOG.md](CHANGELOG.md)
+
+            ## 校验
+            签名证书 SHA-256 指纹：`<填入>`
+
+            ```
+            apksigner verify --print-certs LocalVault-${{ steps.pack.outputs.version }}.apk
+            sha256sum -c SHA256SUMS
+            ```
+
+            **指纹如与上一版不同，且本处没有专门说明，请当作可疑，不要安装。**

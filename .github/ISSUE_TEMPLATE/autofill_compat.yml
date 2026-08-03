@@ -1,0 +1,117 @@
+name: 🧩 自动填充兼容性 / Autofill compatibility
+description: 某个 App 或网页填不进去、存不上、不弹填充窗口
+title: "[Autofill] "
+labels: ["autofill-compat"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        这是本项目最需要的一类反馈。自动填充的行为高度依赖具体 App 的登录页结构，
+        没有你手上的现场信息，作者无法复现，也就无法修。
+
+        请尽量填全。**填不出来的项留空即可，不必因为填不全就不提。**
+
+  - type: input
+    id: app-name
+    attributes:
+      label: App 名称 / 网站
+      placeholder: 例如：淘宝、vivo 浏览器、xxx 银行
+    validations:
+      required: true
+
+  - type: input
+    id: package-name
+    attributes:
+      label: 包名（如果是 App）
+      description: |
+        获取方式：连上电脑后在打开该 App 的登录页时执行
+        `adb shell dumpsys window | findstr mCurrentFocus`（Windows）
+      placeholder: com.taobao.taobao
+
+  - type: input
+    id: app-version
+    attributes:
+      label: 该 App 的版本号
+      placeholder: 例如 10.42.0
+
+  - type: dropdown
+    id: symptom
+    attributes:
+      label: 现象
+      options:
+        - 完全不弹填充窗口
+        - 弹了填充窗口但选择后没填进去
+        - 只填进了账号，密码没填
+        - 只填进了密码，账号没填
+        - 填错了字段（填到了搜索框/验证码框等）
+        - 能填但保存不下来（系统保存框不弹）
+        - 保存框弹了但存下来的密码是空的
+        - 填成了不该匹配的条目
+        - 其他（在下面描述）
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开 xxx App
+        2. 点「我的」→「登录」
+        3. 光标点进账号框
+        4. 期望弹出填充条，实际没有任何反应
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: 机型
+      placeholder: 例如 vivo X100 / Pixel 7
+    validations:
+      required: true
+
+  - type: input
+    id: android-version
+    attributes:
+      label: Android 版本 / 系统版本
+      placeholder: 例如 Android 14 / OriginOS 4
+    validations:
+      required: true
+
+  - type: input
+    id: vault-version
+    attributes:
+      label: 本地保险库版本
+      description: 在「设置 → 关于」里
+      placeholder: 1.0.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: default-service
+    attributes:
+      label: 系统的默认自动填充服务是否已设为「本地保险库」？
+      options:
+        - 是
+        - 否
+        - 不确定 / 找不到这个设置
+    validations:
+      required: true
+
+  - type: textarea
+    id: logcat
+    attributes:
+      label: logcat（有条件的话）
+      description: |
+        `adb logcat -s AutofillSvc AssistShell AutofillDbg`
+        操作一遍复现步骤，把输出贴过来。
+      render: text
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 确认
+      options:
+        - label: 我贴出的日志和截图里没有包含真实账号、密码或其他个人信息
+          required: true

@@ -1,0 +1,23 @@
+# 依赖更新。两个生态都要看：
+#   gradle          —— 应用依赖，尤其 argon2kt（牵涉文件格式兼容，升级必须跑全测试）
+#   github-actions  —— action 被投毒是真实存在的攻击路径，别让它们长期不更新
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [dependencies]
+    groups:
+      androidx:
+        patterns: ["androidx.*"]
+      kotlin:
+        patterns: ["org.jetbrains.kotlin*"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    labels: [dependencies, ci]

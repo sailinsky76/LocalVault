@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  主题图标层（Android 13+ 的「主题化图标」开关打开时用这一层）。
+
+  系统会**丢掉这里写的颜色**，按用户壁纸取色重新上色，所以这里只需要一个正确的
+  单色剪影。几何和 ic_launcher_foreground 逐字相同，只有两点差别：
+    1. 锁梁从「描边」改成和锁体同色 —— 主题图标不允许有第二个颜色，
+       靠明度差区分锁梁/锁体的手法在这一层不成立，只能靠轮廓；
+    2. 锁孔仍然是挖空的。这一层里挖空是**必须的**：如果把锁孔画成实心，
+       整个图标就退化成一个圆角方块加一个半圆，看不出是锁。
+
+  改了前景层的几何，这个文件要跟着改，否则同一个 App 在「主题化图标」开和关
+  两种状态下会长得不一样。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:pathData="M41.2,53 V41.1 A12.8,12.8 0 0 1 66.8,41.1 V53"
+        android:strokeWidth="6.4"
+        android:strokeColor="#FF000000"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="miter" />
+
+    <path
+        android:fillColor="#FF000000"
+        android:fillType="evenOdd"
+        android:pathData="M38,50.7 H70 A8,8 0 0 1 78,58.7 V74.7 A8,8 0 0 1 70,82.7 H38 A8,8 0 0 1 30,74.7 V58.7 A8,8 0 0 1 38,50.7 Z M50.66,66.48 L50,76 L58,76 L57.34,66.48 A5.2,5.2 0 1 0 50.66,66.48 Z" />
+</vector>

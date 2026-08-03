@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      ┌──────────────────────────────────────────────────────────────┐
+      │  权限清单 —— 这份清单本身就是产品的核心卖点。                    │
+      │                                                              │
+      │  这里没有 android.permission.INTERNET。                       │
+      │  没有它，进程无法建立任何 socket，数据在技术上不可能离开设备。     │
+      │  上架时「数据安全」表格可以诚实地填「不收集任何数据」。            │
+      │                                                              │
+      │  任何人往这里加 INTERNET / ACCESS_NETWORK_STATE 之前，          │
+      │  请先想清楚是不是要放弃这个产品最大的差异化。                     │
+      └──────────────────────────────────────────────────────────────┘
+      仅声明生物识别：用于把保险库主密钥包在 Keystore 里做快捷解锁。
+    -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+    <!--
+      ┌──────────────────────────────────────────────────────────────┐
+      │  POST_NOTIFICATIONS —— 加在上面那个框的规矩之下，不是绕过它。     │
+      │                                                              │
+      │  它是 13+ 的一项**普通运行时权限**，不是「特殊应用权限」：       │
+      │  不出现在「特殊权限」列表里，不需要上架单独申报理由，            │
+      │  用户不给也只是少一条通知，别的功能一样用。                     │
+      │                                                              │
+      │  为什么非要它：保存确认页只有一条入口时，那条入口在真机上不到达。 │
+      │  服务自己 startActivity 会被后台启动限制拦下；交给系统的         │
+      │  SaveCallback.onSuccess(IntentSender) 也没用——框架是回头交给    │
+      │  被填的那个 Activity 去发的，而系统的保存框恰恰是在那个 Activity │
+      │  销毁之后才弹出来。通知是用户自己点的、由系统代发，是这条链上     │
+      │  唯一一条不需要别人替我们拉页面的入口。现场记录在                │
+      │  VaultAutofillService.onSaveRequest 和 SaveNotice 的注释里。     │
+      │                                                              │
+      │  这里没有放弃任何东西：仍然没有 INTERNET，进程在技术上仍然       │
+      │  建不出 socket，「数据安全」表格仍然可以诚实地填「不收集任何数据」。│
+      │  通知本身也不带任何库内容——不写用户名、不写密码、不写是哪个应用， │
+      │  锁屏可见性写死 SECRET（见 SaveNotice 文件头）。                │
+      └──────────────────────────────────────────────────────────────┘
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- 明确声明不需要的能力，避免被应用市场归类到高风险类目 -->
+    <uses-feature android:name="android.hardware.fingerprint" android:required="false" />
+
+    <!--
+      ┌──────────────────────────────────────────────────────────────┐
+      │  <queries> 不是权限，上面那份 uses-permission 清单仍然只有一条。  │
+      │                                                              │
+      │  它做的事是：让我们能看见**带启动图标的应用**（有 MAIN/LAUNCHER  │
+      │  过滤器的那些），仅此而已。用途只有一个——新增/编辑条目时的       │
+      │  「选择应用」（ui/apps/AppPickerSheet.kt）。                    │
+      │                                                              │
+      │  为什么必须有它：Android 11（API 30）起包可见性默认收紧，       │
+      │  不声明的话 queryIntentActivities 只返回我们自己。            │
+      │                                                              │
+      │  为什么**不用** QUERY_ALL_PACKAGES：那是一项敏感权限，会出现在   │
+      │  「应用信息 → 权限」里，上架还要单独申报理由。而这个应用的权限    │
+      │  清单本身就是卖点（见文件顶上那个框）。为一个输入辅助去动它，     │
+      │  换来的可见范围还包括一堆没有界面的服务壳子——用户既认不出，      │
+      │  也不会想给它们存密码。                                        │
+      │                                                              │
+      │  拿到的名单只在选择器打开的那一段时间里活着：不落盘、不进保险库、  │
+      │  不写日志（ui/apps/InstalledAppCatalog.kt）。而且这个进程没有    │
+      │  INTERNET 权限，它在技术上也传不出去。真正被记下来的只有用户      │
+      │  亲手勾中的那几个包名——和他手打的网址一样，是他自己的数据。      │
+      └──────────────────────────────────────────────────────────────┘
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".VaultApp"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
+        android:hasFragileUserData="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="false"
+        android:theme="@style/Theme.LocalVault"
+        android:enableOnBackInvokedCallback="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.LocalVault">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          ┌──────────────────────────────────────────────────────────────┐
+          │  BIND_AUTOFILL_SERVICE 不是这个应用申请的权限。                 │
+          │                                                              │
+          │  `android:permission` 写在 <service> 上，意思是**别人**要绑定   │
+          │  这个服务必须持有它——而全世界只有 system_server 持有。         │
+          │  也就是说这一行不是「我们要一项能力」，而是「除了系统，谁都      │
+          │  别想连上来」。它不会出现在「应用信息 → 权限」里，              │
+          │  上面那份 uses-permission 清单仍然只有 USE_BIOMETRIC 一条。     │
+          │                                                              │
+          │  写成 exported="false" 是不行的：系统就是靠 Intent 过滤器      │
+          │  把它列进「设置 → 自动填充服务」的候选里的。真正的门是          │
+          │  上面那一行 permission，不是 exported。                        │
+          │  详见 SettingsModel.AUTOFILL_NOTE，关于页上对用户说的是同一件事。│
+          └──────────────────────────────────────────────────────────────┘
+        -->
+        <service
+            android:name=".ui.autofill.VaultAutofillService"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_AUTOFILL_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.autofill.AutofillService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.autofill"
+                android:resource="@xml/autofill_service" />
+        </service>
+
+        <!--
+          填充用的解锁跳板。exported="false"：它只由我们自己那个
+          PendingIntent 拉起（系统代发），没有任何别的应用需要能启动它。
+
+          · taskAffinity="" —— 让它自成一个任务，不要挤进主应用那个任务栈。
+            否则用户在浏览器里解一次锁，主应用的返回栈里就多压一层，
+            下次打开应用按返回会退到一个本该不存在的解锁页。
+          · excludeFromRecents —— 「最近任务」里不留痕。它是一层浮窗，不是一个去处。
+          · 不写 noHistory：指纹弹窗会让这一页短暂失去焦点，
+            noHistory 会在那一刻把它销毁，认证结果就没地方回了。
+          · adjustResize + singleTop 与主界面一致（主密码输入框要给键盘让位）。
+        -->
+        <activity
+            android:name=".ui.autofill.AutofillUnlockActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.LocalVault" />
+
+        <!--
+          填充用的挑选页（填充条末尾那条「在保险库里搜索」的落点）。
+          属性和上面那一页**逐条相同**，理由也逐条相同——它们是一对，
+          任何一条在这两处不一致，都会表现成「从解锁进和从搜索进，行为不一样」。
+
+          仍然不写 noHistory：这一页上也会弹指纹框（库中途被自动锁定时
+          它会摆出解锁那两屏，见 AutofillPickFlow.Unlocking），
+          noHistory 会在失焦那一刻把它销毁，认证结果就没地方回了。
+
+          仍然 exported="false"：它只由我们自己那个 PendingIntent 拉起（系统代发）。
+          这一条比解锁页更要紧——这一页开着的时候，屏幕上摆的是库里的条目清单。
+        -->
+        <activity
+            android:name=".ui.autofill.AutofillPickActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.LocalVault" />
+
+        <!--
+          保存确认页（用户按下系统那个保存框之后的落点）。
+          属性和上面那两页**逐条相同**，理由也逐条相同——三页是一套，
+          任何一条在这三处不一致，都会表现成「从这条路进来行为不一样」。
+
+          三页现在连**谁拉起它**都一样了：都是系统代发我们自己的 PendingIntent。
+          那两页走 FillResponse/Dataset 的 setAuthentication，这一页走
+          SaveCallback.onSuccess(IntentSender)。
+          （M4-3b 那天这一页是服务自己 startActivity 拉的，那条路在 Android 10
+          及以上会被后台启动限制静默拦下——保存框弹得出来、这一页永远不出现、
+          还不抛异常。现场记录在 VaultAutofillService.onSaveRequest 的注释里。）
+          exported 仍然是 false——服务和它在同一个进程、同一个 APK 里，
+          不需要对外开门。这一条比另外两页更要紧：
+          这一页被拉起时，进程里正揣着一份明文密码。
+
+          singleTop 这一条在这一页上比另外两页更要紧，而且它要求代码那边有
+          onNewIntent：用户上一次被问「要存吗」时按了 Home（这一页没 finish，
+          又 excludeFromRecents，他再也回不去），下一次的票会送到那个老实例上。
+          不接 onNewIntent 就没人去取那张票——表现同样是「按下更新什么都没发生」。
+
+          仍然不写 noHistory：这一页上也会弹指纹框（库锁着时它摆的是
+          解锁那两屏，AutofillSaveFlow.Unlocking），noHistory 会在失焦
+          那一刻把它销毁，而它一销毁，手上那份交接单就跟着没了——
+          用户解完锁回来会发现要存的东西不见了。
+
+          taskAffinity="" 这一行现在**只对 26/27 那条兜底路生效**（决策(222)）：
+          28+ 上系统是从「被填的那个 Activity」的上下文启动我们这一页的，
+          那个 Intent 里没有 FLAG_ACTIVITY_NEW_TASK（AutofillSaveActivity.intent
+          已经把它去掉了），而不新建任务的启动根本不看 affinity——这一页会像
+          平台文档说的那样压在宿主应用那个任务上，和另外两页一致。
+          曾经这里加过 NEW_TASK，结果是让系统去后台新建一个任务，被 BAL 拦下，
+          表现就是「按下更新什么都没发生」。现场记录在 onSaveRequest 的注释里。
+        -->
+        <activity
+            android:name=".ui.autofill.AutofillSaveActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.LocalVault" />
+    </application>
+</manifest>
