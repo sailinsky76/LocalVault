@@ -14,7 +14,7 @@
 两种私密渠道:
 
 1. **GitHub 私密报告**(推荐):本仓库 → Security → Report a vulnerability
-2. **邮件**:`shiqi_zheng@126.com`
+2. **邮件**:`locvault_security@126.com`
 
 报告里请尽量包含:受影响的版本 / commit、复现步骤、设备与 Android 版本、
 以及你判断的影响范围。有 PoC 更好,但不是必需——描述清楚也一样有价值。
@@ -87,7 +87,7 @@ entire credential sets.
 Two private channels:
 
 1. **GitHub private reporting** (preferred): this repo → Security → Report a vulnerability
-2. **Email**: `shiqi_zheng@126.com`
+2. **Email**: `locvault_security@126.com`
 
 Please include where you can: affected version or commit, reproduction steps,
 device and Android version, and your read on the impact. A PoC helps but is
