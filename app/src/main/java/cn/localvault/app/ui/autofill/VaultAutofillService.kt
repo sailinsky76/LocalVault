@@ -478,12 +478,21 @@ class VaultAutofillService : AutofillService() {
      * `FLAG_ONE_SHOT` 是同一件事的另一半：这张票本来就只该被用一次
      * （[SaveHandoff.take] 取一次就清）。
      *
-     * ── 这一处和另外两个 sender 相反，用 `FLAG_IMMUTABLE` ──
+     * ── 这一处和另外两个 sender 相反，用 `FLAG_IMMUTABLE`，且无条件 ──
      *
      * [AutofillResponses.unlockSender] / `pickSender` 必须可变，因为**系统要往那两个
      * `Intent` 里塞** `EXTRA_ASSIST_STRUCTURE`（那边注释写了写成 IMMUTABLE 的后果）。
      * 这一处反过来：确认页要的东西已经在 extras 里了（一个数字），系统不需要补任何东西，
      * 那就没有任何理由留一个可变的出去。
+     *
+     * 曾经写成 `SDK_INT >= S` 才加，那是把「31 起必须显式二选一」这条要求
+     * 错当成了旗子本身的版本下限——`FLAG_IMMUTABLE` 自 API 23 起就可用。
+     * 这条路只在 28+ 走，而系统那句
+     * `mContext.startIntentSender(intentSender, null, 0, 0, 0)` 的 fillIn 参数是
+     * `null`（见 [watchSaveEntry] 那段），不填任何东西，所以 immutable 一路安全。
+     *
+     * 注意：另外两个 sender 那边的 `SDK_INT >= S` 门槛是**对的**，不要一起改——
+     * `FLAG_MUTABLE` 这个常量确实是 31 才有，而 31 以前默认就是可变的。
      *
      * [REQ_SAVE] 必须和 `AutofillResponses` 里那两个 requestCode 都不同，
      * 理由同那边：共用一个 code 的两个 `PendingIntent` 会互相顶掉。
@@ -491,7 +500,7 @@ class VaultAutofillService : AutofillService() {
     private fun saveSender(ticket: SaveHandoff.Ticket): IntentSender? = runCatching {
         val flags = PendingIntent.FLAG_CANCEL_CURRENT or
             PendingIntent.FLAG_ONE_SHOT or
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_IMMUTABLE else 0
+            PendingIntent.FLAG_IMMUTABLE
         PendingIntent.getActivity(
             this,
             REQ_SAVE,

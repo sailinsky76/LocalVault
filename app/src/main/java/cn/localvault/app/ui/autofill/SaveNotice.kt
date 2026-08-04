@@ -164,11 +164,27 @@ object SaveNotice {
      * `FLAG_CANCEL_CURRENT`：`PendingIntent` 按 (requestCode, Intent) 配对复用，
      * **extras 不参与配对**——不加它，第二条通知会复用第一条那个 `PendingIntent`，
      * 点进去拿到的是一张早就被取过的旧票（同 `VaultAutofillService.saveSender`）。
+     *
+     * ── `FLAG_IMMUTABLE` 无条件加，不看版本 ──
+     *
+     * 这里曾经写成 `SDK_INT >= S` 才加，那是把两件事混了：**31 引入的是
+     * 「必须显式二选一」这条强制要求**，而 `FLAG_IMMUTABLE` 这个旗子本身
+     * 从 API 23 就有了。`minSdk 26` 之下没有任何版本需要退让。
+     *
+     * 差别在 26–30：那几版上它是可变的。目标组件改不了（`fillIn` 不覆盖已设的
+     * component），但拿到 `BIND_NOTIFICATION_LISTENER_SERVICE` 的应用能读到
+     * 通知里的 `PendingIntent` 并往里塞 extras——也就是换掉 [EXTRA_TICKET]。
+     * 危害有限（票是一次性的、槽里同时只有一份），但没有任何理由留着。
+     *
+     * 加成 immutable 不影响这条路：系统投递通知 `contentIntent` 时不做 `fillIn`，
+     * 确认页要的东西（一个数字）已经在 extras 里了。
+     * 这和 [AutofillResponses.unlockSender] / `pickSender` 必须 `FLAG_MUTABLE`
+     * 不矛盾——那两处是**系统要往 Intent 里塞** `EXTRA_ASSIST_STRUCTURE`。
      */
     private fun entry(context: Context, ticket: SaveHandoff.Ticket): PendingIntent {
         val flags = PendingIntent.FLAG_CANCEL_CURRENT or
             PendingIntent.FLAG_ONE_SHOT or
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_IMMUTABLE else 0
+            PendingIntent.FLAG_IMMUTABLE
         return PendingIntent.getActivity(
             context,
             REQ_NOTICE,
